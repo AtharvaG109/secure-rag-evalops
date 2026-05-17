@@ -1,0 +1,14 @@
+.env
+.env.production
+.DS_Store
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pyc
+*.db
+*.sqlite
+*.evtx
+postgres_data/
+qdrant_data/
+redis_data/

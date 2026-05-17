@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: snok/install-poetry@v1
+      - run: poetry install
+      - run: poetry run ruff check .
+      - run: poetry run mypy app --strict
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15.12-alpine
+        env:
+          POSTGRES_DB: securerag
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+      qdrant:
+        image: qdrant/qdrant:v1.13.4
+        ports:
+          - 6333:6333
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/securerag
+      REDIS_URL: redis://localhost:6379/0
+      QDRANT_URL: http://localhost:6333
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: snok/install-poetry@v1
+      - run: poetry install
+      - run: poetry run alembic upgrade head
+      - run: poetry run pytest -q
