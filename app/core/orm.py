@@ -51,6 +51,9 @@ class DocumentORM(Base):
     chunks: Mapped[list[ChunkORM]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
     )
+    entity_mentions: Mapped[list[EntityMentionORM]] = relationship(
+        back_populates="document", cascade="all, delete-orphan"
+    )
 
 
 class ChunkORM(Base):
@@ -66,6 +69,115 @@ class ChunkORM(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     document: Mapped[DocumentORM] = relationship(back_populates="chunks")
+    entity_mentions: Mapped[list[EntityMentionORM]] = relationship(
+        back_populates="chunk", cascade="all, delete-orphan"
+    )
+    evidence_relations: Mapped[list[EntityRelationORM]] = relationship(
+        back_populates="evidence_chunk", cascade="all, delete-orphan"
+    )
+
+
+class EntityORM(Base):
+    __tablename__ = "entities"
+    __table_args__ = (
+        UniqueConstraint("namespace", "normalized_name", name="uq_entities_namespace_name"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    namespace: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    normalized_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    mentions: Mapped[list[EntityMentionORM]] = relationship(
+        back_populates="entity", cascade="all, delete-orphan"
+    )
+    outgoing_relations: Mapped[list[EntityRelationORM]] = relationship(
+        back_populates="source_entity",
+        foreign_keys="EntityRelationORM.source_entity_id",
+        cascade="all, delete-orphan",
+    )
+    incoming_relations: Mapped[list[EntityRelationORM]] = relationship(
+        back_populates="target_entity",
+        foreign_keys="EntityRelationORM.target_entity_id",
+        cascade="all, delete-orphan",
+    )
+
+
+class EntityMentionORM(Base):
+    __tablename__ = "entity_mentions"
+    __table_args__ = (
+        UniqueConstraint("entity_id", "chunk_id", name="uq_entity_mentions_entity_chunk"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    entity_id: Mapped[str] = mapped_column(
+        ForeignKey("entities.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    document_id: Mapped[str] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    chunk_id: Mapped[str] = mapped_column(
+        ForeignKey("chunks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    mention_text: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    entity: Mapped[EntityORM] = relationship(back_populates="mentions")
+    document: Mapped[DocumentORM] = relationship(back_populates="entity_mentions")
+    chunk: Mapped[ChunkORM] = relationship(back_populates="entity_mentions")
+
+
+class EntityRelationORM(Base):
+    __tablename__ = "entity_relations"
+    __table_args__ = (
+        UniqueConstraint(
+            "namespace",
+            "source_entity_id",
+            "target_entity_id",
+            "relation_type",
+            "evidence_chunk_id",
+            name="uq_entity_relations_evidence",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    namespace: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    source_entity_id: Mapped[str] = mapped_column(
+        ForeignKey("entities.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    target_entity_id: Mapped[str] = mapped_column(
+        ForeignKey("entities.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    relation_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    evidence_chunk_id: Mapped[str] = mapped_column(
+        ForeignKey("chunks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    source_entity: Mapped[EntityORM] = relationship(
+        back_populates="outgoing_relations",
+        foreign_keys=[source_entity_id],
+    )
+    target_entity: Mapped[EntityORM] = relationship(
+        back_populates="incoming_relations",
+        foreign_keys=[target_entity_id],
+    )
+    evidence_chunk: Mapped[ChunkORM] = relationship(back_populates="evidence_relations")
 
 
 class NamespaceAccessORM(Base):

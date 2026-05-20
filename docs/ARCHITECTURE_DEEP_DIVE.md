@@ -2,15 +2,19 @@
 
 ## Ingestion design
 
-Parsers normalize supported files into pages. Structure-aware chunking prefers paragraph boundaries for prose and function/class boundaries for code before embeddings are upserted into Qdrant with namespace payloads.
+Parsers normalize supported files into pages. Structure-aware chunking prefers paragraph boundaries for prose and function/class boundaries for code before embeddings are upserted into Qdrant with namespace payloads. The same chunks are indexed into a deterministic graph-memory layer that stores entities, mentions, and document-backed relationships in Postgres.
 
 ## Storage policy
 
-Raw files are not retained after ingestion. Postgres stores document metadata, chunk metadata, permissions, eval rows, guardrail events, and cost events.
+Raw files are not retained after ingestion. Postgres stores document metadata, chunk metadata, graph-memory entities/mentions/relations, permissions, eval rows, guardrail events, and cost events.
 
 ## Retrieval design
 
-Authorization runs before retrieval. Redis caches query embeddings, Qdrant applies a namespace filter, lexical search scores exact terms from stored chunks, and hybrid results are reranked with MMR.
+Authorization runs before retrieval. Redis caches query embeddings, Qdrant applies a namespace filter, lexical search scores exact terms from stored chunks, and graph-memory expansion adds chunks connected through stored entities and relations before the blended result set is reranked with MMR.
+
+## Graph memory design
+
+The graph layer is intentionally relational rather than a second database service. Deterministic extraction records title-cased concepts, code-like identifiers, and simple relation verbs such as `uses`, `depends on`, and `connects to`. Graph retrieval is evidence-backed: it only boosts chunks tied to stored mentions or relation evidence, which keeps the feature offline, explainable, and removable with document deletion.
 
 ## MMR design
 

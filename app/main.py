@@ -16,6 +16,7 @@ from app.api.routers.audit import router as audit_router
 from app.api.routers.auth import router as auth_router
 from app.api.routers.documents import router as documents_router
 from app.api.routers.eval import router as eval_router
+from app.api.routers.graph import router as graph_router
 from app.api.routers.ingest import router as ingest_router
 from app.api.routers.metrics import router as metrics_router
 from app.api.routers.query import router as query_router
@@ -52,6 +53,7 @@ app.include_router(audit_router)
 app.include_router(ingest_router)
 app.include_router(documents_router)
 app.include_router(eval_router)
+app.include_router(graph_router)
 app.include_router(query_router)
 app.include_router(metrics_router)
 

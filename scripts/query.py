@@ -25,6 +25,8 @@ def query(
     typer.echo(payload["answer"])
     for citation in payload["citations"]:
         typer.echo(f"[{citation['index']}] {citation['snippet']} (score: {citation['score']:.3f})")
+    citation_status = payload.get("citation_error") or "passed"
+    typer.echo(f"citation_validation={citation_status}")
     typer.echo(f"trace_id={payload['trace_id']} latency_ms={payload['latency_ms']:.2f}")
 
 

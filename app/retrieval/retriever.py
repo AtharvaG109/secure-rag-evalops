@@ -18,6 +18,7 @@ from app.core.protocols import RedisClient
 from app.core.schemas import Citation, QueryRequest
 from app.core.settings import settings
 from app.ingestion.embeddings import EmbeddingClient
+from app.memory.graph import GraphMemory, merge_graph_chunks
 from app.tracing.trace import trace_span
 
 
@@ -276,6 +277,13 @@ class RAGRetriever:
         vector_chunks = await self.vector_search(embedding, request.namespace, top_k)
         lexical_chunks = await self.lexical_search(request.query, request.namespace, top_k)
         chunks = self.hybrid_rank(vector_chunks, lexical_chunks, top_k)
+        if self._session is not None:
+            graph_chunks = await GraphMemory(self._session).graph_search(
+                request.query,
+                request.namespace,
+                top_k,
+            )
+            chunks = merge_graph_chunks(chunks, graph_chunks, top_k)
         reranked = self.rerank_mmr(chunks, embedding, settings.MMR_LAMBDA, settings.MMR_K)
         context, citations = self.build_context(reranked)
         return RetrievalResult(

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,7 @@ from app.core.authz import NamespaceAuthz
 from app.core.database import get_session
 from app.core.dependencies import get_eval_runner, get_namespace_authz
 from app.core.orm import EvalResultORM, EvalRunORM
+from app.evaluation.report import build_eval_report, render_eval_report_markdown
 from app.evaluation.runner import EvalRunner
 
 router = APIRouter(prefix="/api/v1/eval", tags=["eval"])
@@ -82,6 +84,26 @@ async def get_results(
         }
         for result in results
     ]
+
+
+@router.get("/{run_id}/report", response_model=None)
+async def get_report(
+    run_id: str,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    authz: Annotated[NamespaceAuthz, Depends(get_namespace_authz)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    format: Literal["json", "md"] = "json",
+) -> dict[str, Any] | PlainTextResponse:
+    run = await session.get(EvalRunORM, run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="run_not_found")
+    await authz.require_read(current_user.user_id, run.namespace)
+    report = await build_eval_report(session, run_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="run_not_found")
+    if format == "md":
+        return PlainTextResponse(render_eval_report_markdown(report), media_type="text/markdown")
+    return report.model_dump()
 
 
 @router.get("/{run_id}/failures")

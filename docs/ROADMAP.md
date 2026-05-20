@@ -2,6 +2,8 @@
 
 ## v0.2
 
+- Exportable evaluation reports with failed-citation examples, retrieval misses, and latency/cost summaries
+- Graph-memory filters for relation type, source document, and namespace-level coverage
 - DOCX parser
 - Celery ingestion
 - RAGAS

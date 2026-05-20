@@ -217,3 +217,43 @@ def test_hybrid_rank_blends_vector_and_lexical_results() -> None:
     ranked = retriever.hybrid_rank([vector], [lexical], 2)
 
     assert ranked[0].chunk_id == "l"
+
+
+@pytest.mark.asyncio
+async def test_retrieve_blends_graph_memory_results(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeGraphMemory:
+        def __init__(self, _: object) -> None:
+            return None
+
+        async def graph_search(self, _: str, __: str, ___: int) -> list[ScoredChunk]:
+            return [
+                ScoredChunk(
+                    chunk_id="g",
+                    document_id="d2",
+                    chunk_index=0,
+                    text="PaymentService uses PostgreSQL.",
+                    score=2.0,
+                    namespace="n",
+                    source_filename="architecture.md",
+                    page_start=1,
+                    page_end=1,
+                )
+            ]
+
+    class EmptySession:
+        async def execute(self, _: object) -> FakeScalarRows:
+            return FakeScalarRows([])
+
+    monkeypatch.setattr("app.retrieval.retriever.GraphMemory", FakeGraphMemory)
+    retriever = RAGRetriever(
+        FakeEmbeddingClient(),  # type: ignore[arg-type]
+        FakeQdrant(),  # type: ignore[arg-type]
+        FakeRedis(),  # type: ignore[arg-type]
+        EmptySession(),  # type: ignore[arg-type]
+    )
+
+    result = await retriever.retrieve(
+        type("Request", (), {"query": "PaymentService", "namespace": "n", "top_k": 2})()  # type: ignore[arg-type]
+    )
+
+    assert any(chunk.chunk_id == "g" for chunk in result.chunks)

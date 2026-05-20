@@ -2,6 +2,8 @@
 
 SecureRAG EvalOps is a private-deployment Python RAG evaluation and guardrail platform.
 
+This repository is not the Windows DFIR `timeline` project. Keep timeline-specific Go, Cobra, SQLite-forensics, and Markdown attack-chain requirements out of this codebase.
+
 ## Core rules
 
 - Keep the app buildable after every change.

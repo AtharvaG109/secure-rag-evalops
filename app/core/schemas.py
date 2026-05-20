@@ -66,6 +66,67 @@ class EvalResult(BaseModel):
     latency_ms: float
 
 
+class EvalMetricSummary(BaseModel):
+    sample_count: int
+    citation_validity_v0: float
+    keyword_overlap_v0: float
+    context_recall_v0: float
+    retrieval_hit_rate: float
+    failure_counts: dict[str, int]
+
+
+class EvalLatencySummary(BaseModel):
+    sample_count: int
+    mean_ms: float
+    p50_ms: float
+    p95_ms: float
+    max_ms: float
+
+
+class EvalCostSummary(BaseModel):
+    estimated_total_usd: float
+    chat_usd: float
+    embedding_usd: float
+    event_count: int
+
+
+class EvalGuardrailOutcome(BaseModel):
+    check_name: str
+    count: int
+    blocked_count: int
+
+
+class EvalQuestionReport(BaseModel):
+    query: str
+    failure_type: str
+    retrieval_hit_v0: bool
+    citation_validity_v0: float
+    keyword_overlap_v0: float
+    context_recall_v0: float
+    latency_ms: float
+    generated_answer: str
+
+
+class EvalFailedCitationExample(BaseModel):
+    query: str
+    generated_answer: str
+    failure_type: str
+    citation_validity_v0: float
+
+
+class EvalReportResponse(BaseModel):
+    run_id: str
+    status: str
+    namespace: str
+    pipeline_version: str
+    summary: EvalMetricSummary
+    latency: EvalLatencySummary
+    cost: EvalCostSummary
+    guardrail_outcomes: list[EvalGuardrailOutcome]
+    questions: list[EvalQuestionReport]
+    failed_citation_examples: list[EvalFailedCitationExample]
+
+
 class GuardrailResult(BaseModel):
     passed: bool
     reason: str | None = None
@@ -132,3 +193,26 @@ class DocumentRecord(BaseModel):
 class DeleteDocumentResponse(BaseModel):
     document_id: str
     deleted: bool
+
+
+class GraphNode(BaseModel):
+    id: str
+    label: str
+    entity_type: str
+    mention_count: int
+
+
+class GraphEdge(BaseModel):
+    id: str
+    source: str
+    target: str
+    relation_type: str
+    evidence_chunk_id: str
+    source_filename: str
+    snippet: str
+    confidence: float
+
+
+class GraphResponse(BaseModel):
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
