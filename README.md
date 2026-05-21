@@ -6,7 +6,7 @@ Private-deployment RAG evaluation and guardrail platform for secure enterprise d
 
 ## What this demonstrates
 
-- structure-aware chunking, hybrid retrieval, and deterministic local embeddings
+- structure-aware chunking, graph-augmented hybrid retrieval, and deterministic local embeddings
 - namespace authorization before vector search
 - API-key authentication, audit logging, request limits, and production readiness checks
 - MMR reranking and citation-grounded extractive generation
@@ -16,8 +16,9 @@ Private-deployment RAG evaluation and guardrail platform for secure enterprise d
 
 ```text
 files -> parser -> chunks -> embeddings -> Qdrant
+                     \-> graph memory -> entities / mentions / relations
 query -> authz -> guardrails -> retrieve -> generate -> citations -> redact -> response
-                         \-> Postgres metadata / eval / cost / guardrail events
+                         \-> Postgres metadata / graph / eval / cost / guardrail events
 ```
 
 ## Quickstart
@@ -31,6 +32,8 @@ make check
 make dev
 bash scripts/demo.sh
 ```
+
+For a proof-focused walkthrough, see `docs/RECRUITER_DEMO.md`.
 
 ## Environment variables
 
@@ -50,6 +53,7 @@ bash scripts/demo.sh
 - `GET /api/v1/auth/me`
 - `POST /api/v1/ingest`
 - `POST /api/v1/query`
+- `GET /api/v1/graph`
 - `GET /api/v1/audit/events`
 - `POST /api/v1/eval/run`
 - `GET /api/v1/metrics/{cost,latency,guardrails,eval}`
@@ -65,6 +69,18 @@ python scripts/run_eval.py evals/golden_set.jsonl --namespace security-policy --
 ## Evaluation workflow
 
 The v0.1 evaluation harness uses deterministic metrics: citation validity, keyword overlap, context recall, and retrieval hit rate.
+
+## Quality gate
+
+`make check` runs Ruff, strict mypy, and the pytest suite. The current suite has 91 tests covering authentication, namespace authorization, ingestion, retrieval, graph memory, citation validation, guardrails, evaluation reports, metrics, and the web UI.
+
+## Repository identity
+
+This repository is SecureRAG EvalOps, a Python private-deployment RAG evaluation and guardrail platform. Windows DFIR timeline tooling belongs in the separate `timeline` project and should not be mixed into this codebase.
+
+## Graph memory
+
+Ingestion now extracts deterministic entity mentions and simple document-backed relationships into Postgres. Retrieval blends vector, lexical, and graph evidence so related chunks can surface even when the query and the best answer chunk use different wording. The web UI includes a **Memory Graph** tab for interactively exploring entities, relationships, and the source chunks behind each edge.
 
 ## Guardrails
 
@@ -105,5 +121,5 @@ See `docs/ROADMAP.md`.
 
 ## Resume bullets
 
-- Built a fully offline RAG evaluation backend with namespace isolation, citation validation, guardrails, and persistent cost tracking.
-- Implemented deterministic local embeddings, extractive answer generation, and an end-to-end demo workflow spanning ingestion, retrieval, generation, and observability.
+- Built a fully offline RAG evaluation backend with namespace isolation, citation validation, graph memory, guardrails, and persistent cost tracking.
+- Implemented deterministic local embeddings, graph-augmented retrieval, extractive answer generation, and an end-to-end demo workflow spanning ingestion, retrieval, generation, and observability.

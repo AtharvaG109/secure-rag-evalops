@@ -12,6 +12,7 @@ from app.ingestion.chunker import chunk_pages
 from app.ingestion.embeddings import EmbeddingClient
 from app.ingestion.parsers import parse_file
 from app.ingestion.vector_store import VectorStore
+from app.memory.graph import GraphMemory
 from app.tracing.trace import trace_span
 
 
@@ -84,19 +85,20 @@ class IngestionPipeline:
             namespace=request.namespace,
             source_filename=request.source_filename,
         )
-        self._session.add_all(
-            [
-                ChunkORM(
-                    document_id=document.id,
-                    text=chunk.text,
-                    chunk_index=chunk.chunk_index,
-                    token_count=chunk.token_count,
-                    page_start=chunk.page_start,
-                    page_end=chunk.page_end,
-                )
-                for chunk in chunks
-            ]
-        )
+        chunk_rows = [
+            ChunkORM(
+                document_id=document.id,
+                text=chunk.text,
+                chunk_index=chunk.chunk_index,
+                token_count=chunk.token_count,
+                page_start=chunk.page_start,
+                page_end=chunk.page_end,
+            )
+            for chunk in chunks
+        ]
+        self._session.add_all(chunk_rows)
+        await self._session.flush()
+        await GraphMemory(self._session).index_document(document, chunk_rows)
         await self._session.commit()
         return IngestResponse(
             document_id=document.id,
