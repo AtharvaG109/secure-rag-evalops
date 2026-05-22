@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest a SecureRAG EvalOps improvement.
+title: "[feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What operator, evaluator, or security workflow does this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Boundaries
+      description: Note data retention, authorization, citation, or local-default constraints.
+    validations:
+      required: true

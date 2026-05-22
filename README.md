@@ -74,6 +74,8 @@ The v0.1 evaluation harness uses deterministic metrics: citation validity, keywo
 
 `make check` runs Ruff, strict mypy, and the pytest suite. The current suite has 91 tests covering authentication, namespace authorization, ingestion, retrieval, graph memory, citation validation, guardrails, evaluation reports, metrics, and the web UI.
 
+For release-focused validation, follow [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md). It covers local gates, integration dependency checks, authorization/citation safety review, and synthetic-data requirements.
+
 ## Repository identity
 
 This repository is SecureRAG EvalOps, a Python private-deployment RAG evaluation and guardrail platform. Windows DFIR timeline tooling belongs in the separate `timeline` project and should not be mixed into this codebase.
